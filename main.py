@@ -2,6 +2,7 @@ import requests
 from dotenv import load_dotenv
 import os
 from datetime import datetime
+import json
 
 load_dotenv()
 city = "Thailand,Bangkok"
@@ -10,11 +11,16 @@ locations = ["ประเวศ","อารีย์"]
 lat = [13.7058,13.7725]
 lon = [100.6783,100.5412]
 webhook_url = os.getenv("DISCORD_WEBHOOK")
-
-
 log_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-for i in range(len(locations)):
-    weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat[i]}&lon={lon[i]}&appid={api_key}&units=metric&lang=th"
+
+with open("./locations.json", "r", encoding="utf-8") as f:
+    data_locations = json.load(f)
+
+for i in data_locations:
+    location = i["location"]
+    lat = i["lat"]
+    lon = i["lon"]
+    weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=th"
 
     response = requests.get(weather_url)
     data = response.json()
@@ -47,7 +53,7 @@ for i in range(len(locations)):
         deg = data['wind']['deg']
 
         message = (
-            f"📍 สภาพอากาศวันนี้ที่ **{locations[i]}**\n"
+            f"📍 สภาพอากาศวันนี้ที่ **{location}**\n"
             f"{emoji} สภาพอากาศ: {weather_description}\n"
             f"🌡 อุณหภูมิ: {temp}°C\n"
             f"💧 ความชื้น: {humidity}%\n"
@@ -60,6 +66,6 @@ for i in range(len(locations)):
         }
         res = requests.post(webhook_url, json=payload)
         if res.status_code == 204:
-            print(f"[{log_time}] ✅ ส่งข้อความสำเร็จ: {locations[i]}")
+            print(f"[{log_time}] ✅ ส่งข้อความสำเร็จ: {location}")
         else:
-            print(f"[{log_time}] ❌ ส่งไม่สำเร็จ: {locations[i]} | Status Code: {res.status_code}")
+            print(f"[{log_time}] ❌ ส่งไม่สำเร็จ: {location} | Status Code: {res.status_code}")
