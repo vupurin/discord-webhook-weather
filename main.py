@@ -7,14 +7,36 @@ import json
 load_dotenv()
 city = "Thailand,Bangkok"
 api_key = os.getenv("API_KEY_OPENWEATHERMAP")
-locations = ["ประเวศ","อารีย์"]
-lat = [13.7058,13.7725]
-lon = [100.6783,100.5412]
 webhook_url = os.getenv("DISCORD_WEBHOOK")
-log_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+log_time = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
 with open("./locations.json", "r", encoding="utf-8") as f:
     data_locations = json.load(f)
+
+now = datetime.now()
+hour = now.hour
+greeting_emoji = "❓"
+if 5 <= hour < 11:
+    time_period = "เช้า"
+    greeting_emoji = "🌅"
+elif 11 <= hour < 15:
+    time_period = "กลางวัน"
+    greeting_emoji = "☀️"
+elif 15 <= hour < 18:
+    time_period = "เย็น"
+    greeting_emoji = "🌇"
+else:
+    time_period = "มืด"
+    greeting_emoji = "🌙"
+
+greeting = (
+    f"👋 สวัสดียาม{time_period} {greeting_emoji}\n"
+    f"\n"
+)
+payload = {
+            "content": greeting
+}
+requests.post(webhook_url, json=payload)
 
 for i in data_locations:
     location = i["location"]
