@@ -26,43 +26,48 @@ except FileNotFoundError:
     logging.error("Fail to load file locations.json")
 
 def greeting():
-    now = datetime.now()
-    hour = now.hour
-    greeting_emoji = "❓"
-    if 5 <= hour < 11:
-        time_period = "เช้า"
-        greeting_emoji = "🌅"
-    elif 11 <= hour < 15:
-        time_period = "กลางวัน"
-        greeting_emoji = "☀️"
-    elif 15 <= hour < 18:
-        time_period = "เย็น"
-        greeting_emoji = "🌇"
-    else:
-        time_period = "มืด"
-        greeting_emoji = "🌙"
+    log_time = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    try:
+        now = datetime.now()
+        hour = now.hour
+        greeting_emoji = "❓"
+        if 5 <= hour < 11:
+            time_period = "เช้า"
+            greeting_emoji = "🌅"
+        elif 11 <= hour < 15:
+            time_period = "กลางวัน"
+            greeting_emoji = "☀️"
+        elif 15 <= hour < 18:
+            time_period = "เย็น"
+            greeting_emoji = "🌇"
+        else:
+            time_period = "มืด"
+            greeting_emoji = "🌙"
 
-    greeting = (
-        f"👋 สวัสดียาม{time_period} {greeting_emoji}\n"
-        f"\n"
-    )
-    payload = {
-                "content": greeting
-    }
-    requests.post(webhook_url, json=payload)
+        greeting = (
+            f"👋 สวัสดียาม{time_period} {greeting_emoji}\n"
+            f"\n"
+        )
+        payload = {
+            "content": greeting
+        }
+        res = requests.post(webhook_url, json=payload, timeout=10)
+    except Exception as e:
+            logging.error(f"[{log_time}] ❌ เกิดข้อผิดพลาดกับ greeting(): {e}")
 
 def send_webnook(log_time):
     for i in data_locations:
         location = i["location"]
         lat = i["lat"]
         lon = i["lon"]
-        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=th"
+        try:
+            weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=th"
 
-        response = requests.get(weather_url)
-        data = response.json()
-        if data.get("cod") != 200:
-            logging.error(f"[{log_time}] ❌ {data.get('message')}")
-        else:
+            response = requests.get(weather_url)
+            data = response.json()
+            if data.get("cod") != 200:
+                logging.error(f"[{log_time}] ❌ {location}: {data.get('message')}")
+                continue
             weather_description = data['weather'][0]['description']
             weather = data["weather"][0]["main"].lower()
             emoji = "❓"
@@ -100,12 +105,16 @@ def send_webnook(log_time):
             payload = {
                 "content": message
             }
-            res = requests.post(webhook_url, json=payload)
-            if res.status_code == 204:
-                logging.info(f"[{log_time}] ✅ ส่งข้อความสำเร็จ: {location}")
-            else:
-                logging.error(f"[{log_time}] ❌ ส่งไม่สำเร็จ: {location} | Status Code: {res.status_code}")
-
+            try:
+                res = requests.post(webhook_url, json=payload)
+                if res.status_code == 204:
+                    logging.info(f"[{log_time}] ✅ ส่งข้อความสำเร็จ: {location}")
+                else:
+                    logging.error(f"[{log_time}] ❌ ส่งไม่สำเร็จ: {location} | Status Code: {res.status_code}")
+            except ConnectionError:
+                logging.error(f"[{log_time}] ❌ ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้: {location}")
+        except Exception as e:
+            logging.error(f"[{log_time}] ❌ เกิดข้อผิดพลาดกับ {location}: {e}")
 
 def job():
         log_time = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
